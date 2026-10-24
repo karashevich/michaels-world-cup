@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Michael's World Cup</title>
+<style>
+:root{font-family:system-ui,-apple-system,Arial,sans-serif;color:#172235;background:#f5f7fb}
+*{box-sizing:border-box}body{margin:0}.wrap{max-width:1150px;margin:auto;padding:28px 18px}
+.language{margin-left:auto;display:flex;align-items:center;gap:8px}.language select{border:1px solid #cdd5e1;border-radius:9px;padding:10px;background:white;font:inherit}h1{margin:0 0 8px;font-size:clamp(25px,4vw,38px)}h2{margin:26px 0 12px}
+p{color:#596578}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+button{background:white;border:1px solid #cdd5e1;border-radius:9px;padding:10px 14px;cursor:pointer;font-weight:600}
+button:hover{background:#edf2ff}.panel{background:white;border:1px solid #dce2eb;border-radius:14px;overflow:hidden}
+table{width:100%;border-collapse:collapse}th,td{padding:11px 12px;border-bottom:1px solid #e9edf3;text-align:left}
+th{background:#f0f4fa;font-size:13px;color:#43536b}tr:last-child td{border-bottom:0}
+.num{text-align:center;font-variant-numeric:tabular-nums}.games{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}
+.game{background:white;border:1px solid #dce2eb;border-radius:14px;padding:17px}
+.gameheader{display:flex;justify-content:space-between;align-items:center;color:#637087;font-size:13px}
+.vs{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:13px 0}
+.team{font-size:17px;font-weight:750;flex:1}.team.right{text-align:right}
+.score{display:flex;gap:5px;align-items:center}
+.score input{width:52px;padding:8px 3px;text-align:center;border:1px solid #b9c5d5;border-radius:8px;font-size:20px;font-weight:700}
+.rosters{display:grid;grid-template-columns:1fr 1fr;gap:14px;border-top:1px solid #edf0f5;padding-top:12px}
+.rosters div{font-size:13px;line-height:1.8}.rosters strong{display:block;font-size:13px;margin-bottom:4px}
+.note{font-size:13px}.scroll{overflow-x:auto}
+@media print{body{background:white}.toolbar{display:none}.wrap{padding:0}.game{break-inside:avoid}.games{grid-template-columns:1fr 1fr}input{border:0!important}}
+</style></head><body><main class="wrap">
+<h1 id="pageTitle"></h1>
+<p id="intro"></p>
+<div class="toolbar"><button id="printButton" onclick="window.print()"></button><button id="exportButton" onclick="exportCSV()"></button><button id="resetButton" onclick="resetScores()"></button><label class="language"><span id="languageLabel"></span><select id="languageSelect" aria-label="Language" onchange="setLanguage(this.value)"><option value="de">Deutsch</option><option value="en">English</option><option value="ru">Русский</option></select></label></div>
+<h2 id="standingsTitle"></h2><div class="panel scroll"><table><thead><tr id="tableHeaders"></tr></thead><tbody id="standings"></tbody></table></div>
+<p class="note" id="rules"></p>
+<h2 id="gamesTitle"></h2><div class="games" id="games"></div>
+<p class="note" id="saveNote"></p>
+</main><script>
+const DATA={"countries":["Испания","Аргентина","Португалия","Германия","Франция","Бразилия"],"flags":["🇪🇸","🇦🇷","🇵🇹","🇩🇪","🇫🇷","🇧🇷"],"matches":[{"id":1,"a":0,"b":1,"playersA":["Виталий","Макси","Бен","Хенри","Юлиус","Марко"],"playersB":["Оскар","Федя","Миша","Арсений","Руслан","Даниэль"]},{"id":2,"a":2,"b":3,"playersA":["Оскар","Макси","Бен","Арсений","Юлиус","Даниэль"],"playersB":["Виталий","Федя","Миша","Хенри","Руслан","Марко"]},{"id":3,"a":4,"b":5,"playersA":["Оскар","Федя","Бен","Арсений","Руслан","Даниэль"],"playersB":["Виталий","Макси","Миша","Хенри","Юлиус","Марко"]},{"id":4,"a":0,"b":2,"playersA":["Виталий","Федя","Бен","Арсений","Юлиус","Даниэль"],"playersB":["Оскар","Макси","Миша","Хенри","Руслан","Марко"]},{"id":5,"a":1,"b":4,"playersA":["Оскар","Федя","Бен","Хенри","Юлиус","Марко"],"playersB":["Виталий","Макси","Миша","Арсений","Руслан","Даниэль"]},{"id":6,"a":3,"b":5,"playersA":["Оскар","Макси","Миша","Хенри","Юлиус","Даниэль"],"playersB":["Виталий","Федя","Бен","Арсений","Руслан","Марко"]},{"id":7,"a":0,"b":3,"playersA":["Оскар","Федя","Миша","Хенри","Руслан","Марко"],"playersB":["Виталий","Макси","Бен","Арсений","Юлиус","Даниэль"]},{"id":8,"a":1,"b":5,"playersA":["Виталий","Макси","Бен","Арсений","Руслан","Марко"],"playersB":["Оскар","Федя","Миша","Хенри","Юлиус","Даниэль"]},{"id":9,"a":2,"b":4,"playersA":["Виталий","Федя","Бен","Арсений","Руслан","Даниэль"],"playersB":["Оскар","Макси","Миша","Хенри","Юлиус","Марко"]},{"id":10,"a":0,"b":4,"playersA":["Оскар","Макси","Миша","Арсений","Руслан","Даниэль"],"playersB":["Виталий","Федя","Бен","Хенри","Юлиус","Марко"]},{"id":11,"a":1,"b":3,"playersA":["Виталий","Макси","Миша","Хенри","Юлиус","Даниэль"],"playersB":["Оскар","Федя","Бен","Арсений","Руслан","Марко"]},{"id":12,"a":2,"b":5,"playersA":["Виталий","Федя","Миша","Хенри","Юлиус","Марко"],"playersB":["Оскар","Макси","Бен","Арсений","Руслан","Даниэль"]}]};
+const key="kids-world-cup-six-countries-v1";
+const translations={
+de:{title:"⚽🎂 Michael's World Cup",intro:"6 Nationalteams · 12 Spiele · 12 Kinder · 6 Spieler pro Team. Die ursprünglichen Spielerpaare sind immer getrennt und alle Aufstellungen sind unterschiedlich.",print:"🖨️ Drucken / PDF",export:"⬇️ Ergebnisse als CSV",reset:"↺ Ergebnisse löschen",language:"Sprache",standings:"Tabelle",headers:["Platz","Nationalteam","Sp.","S","U","N","Tore","Diff.","Pkt."],rules:"Sieg: 3 Punkte, Unentschieden: 1 Punkt, Niederlage: 0 Punkte. Bei Punktgleichheit entscheiden Tordifferenz und danach erzielte Tore. Spiele ohne vollständiges Ergebnis werden nicht gewertet.",games:"Spiele und Aufstellungen",note:"Ergebnisse werden automatisch in diesem Browser auf diesem Gerät gespeichert. Die Aufstellungen sind festgelegt, Ergebnisse können bearbeitet werden.",match:"Spiel",roster:"Aufstellung",goals:"Tore",confirm:"Alle eingegebenen Ergebnisse löschen?",csv:"fussball_ergebnisse.csv",countries:["Spanien","Argentinien","Portugal","Deutschland","Frankreich","Brasilien"],players:["Oscar","Vitaly","Fedor","Maxi","Michael","Ben","Arseny","Henry","Ruslan","Julius","Marco","Daniel"]},
+en:{title:"⚽🎂 Michael's World Cup",intro:"6 national teams · 12 matches · 12 players · 6 players per team. Original player pairs are always on opposite sides, and every lineup is unique.",print:"🖨️ Print / PDF",export:"⬇️ Export results as CSV",reset:"↺ Clear scores",language:"Language",standings:"Standings",headers:["Rank","National team","P","W","D","L","Goals","GD","Pts"],rules:"Win: 3 points, draw: 1, loss: 0. Ties are broken by goal difference, then goals scored. Matches with missing scores are excluded.",games:"Matches and lineups",note:"Results are automatically saved in this browser on this device. Lineups are fixed; scores can be edited.",match:"Match",roster:"Lineup",goals:"Goals",confirm:"Clear all entered scores?",csv:"football_results.csv",countries:["Spain","Argentina","Portugal","Germany","France","Brazil"],players:["Oscar","Vitaly","Fedor","Maxi","Michael","Ben","Arseny","Henry","Ruslan","Julius","Marco","Daniel"]},
+ru:{title:"⚽🎂 Michael's World Cup",intro:"6 сборных · 12 матчей · 12 игроков · по 6 человек в команде. Исходные пары всегда играют друг против друга, все составы уникальны.",print:"🖨️ Печать / PDF",export:"⬇️ Экспорт результатов CSV",reset:"↺ Очистить счёт",language:"Язык",standings:"Турнирная таблица",headers:["Место","Сборная","И","В","Н","П","Мячи","Разница","Очки"],rules:"Победа — 3 очка, ничья — 1, поражение — 0. При равенстве очков учитываются разница мячей, затем забитые мячи. Матчи без полного счёта не учитываются.",games:"Матчи и составы",note:"Результаты автоматически сохраняются в браузере на этом устройстве. Составы фиксированы, счёт можно редактировать.",match:"Матч",roster:"Состав",goals:"Голы",confirm:"Удалить все введённые результаты?",csv:"football_results.csv",countries:["Испания","Аргентина","Португалия","Германия","Франция","Бразилия"],players:["Оскар","Виталий","Федя","Макси","Миша","Бен","Арсений","Хенри","Руслан","Юлиус","Марко","Даниэль"]}
+};
+let language;try{language=localStorage.getItem("kids-world-cup-language")||"de"}catch(e){language="de"}if(!translations[language])language="de";
+function tr(){return translations[language]}
+function country(i){return tr().countries[i]}
+function timeLabel(minutes){return `${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,"0")}`}
+function matchTime(id){const start=(id-1)*15;const unit={de:"Min.",en:"min",ru:"мин"}[language];return `${timeLabel(start)}–${timeLabel(start+10)} ${unit}`}
+const originalPlayers=translations.ru.players;
+function player(name){const i=originalPlayers.indexOf(name);return i>=0?tr().players[i]:name}
+function setLanguage(value){language=value;document.documentElement.lang=value;try{localStorage.setItem("kids-world-cup-language",value)}catch(e){}renderLanguage();renderGames();renderStandings()}
+function renderLanguage(){const t=tr();document.title=t.title.replace("⚽ ","");document.documentElement.lang=language;document.getElementById("languageSelect").value=language;
+for(const [id,val] of Object.entries({pageTitle:t.title,intro:t.intro,printButton:t.print,exportButton:t.export,resetButton:t.reset,languageLabel:t.language,standingsTitle:t.standings,rules:t.rules,gamesTitle:t.games,saveNote:t.note}))document.getElementById(id).textContent=val;
+document.getElementById("tableHeaders").innerHTML=t.headers.map((v,i)=>`<th ${i>1?'class="num"':''}>${v}</th>`).join("");
+}
+let scores;try{scores=JSON.parse(localStorage.getItem(key))||{}}catch(e){scores={}}
+function scoreValue(v){return v===""||v===null||v===undefined?null:Number(v)}
+function renderGames(){
+document.getElementById("games").innerHTML=DATA.matches.map(m=>`<article class="game">
+<div class="gameheader"><b>${tr().match} ${m.id}</b><span>${matchTime(m.id)}</span></div>
+<div class="vs"><div class="team">${DATA.flags[m.a]} ${country(m.a)}</div>
+<div class="score"><input aria-label="${tr().goals} ${country(m.a)} в матче ${m.id}" type="number" min="0" max="99" inputmode="numeric" data-match="${m.id}" data-side="a" value="${scores[m.id]?.a??""}"><span>:</span><input aria-label="${tr().goals} ${country(m.b)} в матче ${m.id}" type="number" min="0" max="99" inputmode="numeric" data-match="${m.id}" data-side="b" value="${scores[m.id]?.b??""}"></div>
+<div class="team right">${DATA.flags[m.b]} ${country(m.b)}</div></div>
+<div class="rosters"><div><strong>${DATA.flags[m.a]} ${tr().roster}</strong>${m.playersA.map(player).join("<br>")}</div><div><strong>${DATA.flags[m.b]} ${tr().roster}</strong>${m.playersB.map(player).join("<br>")}</div></div></article>`).join("");
+document.querySelectorAll(".score input").forEach(el=>el.addEventListener("input",()=>{
+const id=el.dataset.match,side=el.dataset.side;
+if(el.value!==""&&(!Number.isInteger(Number(el.value))||Number(el.value)<0)){el.value="";} 
+scores[id]??={};scores[id][side]=el.value;
+try{localStorage.setItem(key,JSON.stringify(scores))}catch(e){}
+renderStandings();
+}));
+}
+function calculate(){
+const t=DATA.countries.map((name,i)=>({name:country(i),flag:DATA.flags[i],p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
+for(const m of DATA.matches){
+const s=scores[m.id];if(!s)continue;
+const a=scoreValue(s.a),b=scoreValue(s.b);
+if(a===null||b===null||!Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0)continue;
+const x=t[m.a],y=t[m.b];x.p++;y.p++;x.gf+=a;x.ga+=b;y.gf+=b;y.ga+=a;
+if(a>b){x.w++;x.pts+=3;y.l++}else if(b>a){y.w++;y.pts+=3;x.l++}else{x.d++;y.d++;x.pts++;y.pts++}
+}
+return t.sort((a,b)=>b.pts-a.pts||((b.gf-b.ga)-(a.gf-a.ga))||b.gf-a.gf||a.name.localeCompare(b.name,"ru"));
+}
+function renderStandings(){document.getElementById("standings").innerHTML=calculate().map((t,i)=>`<tr><td>${i+1}</td><td><b>${t.flag} ${t.name}</b></td><td class="num">${t.p}</td><td class="num">${t.w}</td><td class="num">${t.d}</td><td class="num">${t.l}</td><td class="num">${t.gf}:${t.ga}</td><td class="num">${t.gf-t.ga>0?"+":""}${t.gf-t.ga}</td><td class="num"><b>${t.pts}</b></td></tr>`).join("")}
+function resetScores(){if(confirm(tr().confirm)){scores={};localStorage.removeItem(key);renderGames();renderStandings()}}
+function exportCSV(){
+const rows=[[tr().match,tr().headers[1]+" 1",tr().goals+" 1",tr().goals+" 2",tr().headers[1]+" 2"],...DATA.matches.map(m=>[m.id,DATA.countries[m.a],scores[m.id]?.a??"",scores[m.id]?.b??"",DATA.countries[m.b]])];
+const csv="\ufeff"+rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(";")).join("\r\n");
+const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=tr().csv;a.click();URL.revokeObjectURL(url);
+}
+renderLanguage();renderGames();renderStandings();
+</script></body></html>
